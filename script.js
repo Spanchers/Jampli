@@ -5,16 +5,14 @@ const scoreDisplay = document.getElementById("score");
 let angle = 0;
 let ballY = 10;
 let gravity = 2;
-let fastGravity = 5; // Ускоренная гравитация
+let velocity = 0;
 let isFalling = true;
 let score = 0;
 let startX = 0;
-let isHolding = false; // Флаг для ускоренного падения
 
-// Обработчик свайпов (влево/вправо)
+// Свайпы для управления
 document.addEventListener("touchstart", (event) => {
     startX = event.touches[0].clientX;
-    isHolding = true; // Ускоряем падение
 });
 
 document.addEventListener("touchmove", (event) => {
@@ -32,31 +30,23 @@ document.addEventListener("touchmove", (event) => {
     tower.style.transform = `rotate(${angle}deg)`;
 });
 
-document.addEventListener("touchend", () => {
-    isHolding = false; // Обычная скорость падения
-});
-
-// Проверка, провалился ли мяч через дырку
+// Проверка столкновений
 function checkCollision() {
     const platforms = document.querySelectorAll(".platform");
     for (let platform of platforms) {
         let rect = platform.getBoundingClientRect();
         let ballRect = ball.getBoundingClientRect();
 
-        // Если мяч на уровне платформы
         if (
             ballRect.bottom >= rect.top &&
             ballRect.bottom <= rect.bottom &&
             Math.abs(rect.left + rect.width / 2 - ballRect.left - ballRect.width / 2) < 40
         ) {
             if (platform.classList.contains("hole")) {
-                // Мяч проваливается
-                return false;
+                return false; // Мяч проваливается
             } else {
-                // Разрушение платформы
-                platform.style.opacity = "0"; // Исчезновение
-                platform.style.transform = "scale(0)"; // Сжатие
-                setTimeout(() => platform.remove(), 300); // Удаление из DOM
+                platform.classList.add("broken"); // Ломаем платформу
+                setTimeout(() => platform.remove(), 200);
                 return true;
             }
         }
@@ -64,28 +54,24 @@ function checkCollision() {
     return false;
 }
 
-// Анимация падения
+// Физика игры
 function updateGame() {
     if (isFalling) {
-        ballY += isHolding ? fastGravity : gravity; // Ускоренное падение при удержании
+        velocity += gravity;
+        ballY += velocity;
         ball.style.top = `${ballY}px`;
-        ball.style.transition = isHolding ? "top 0.05s linear" : "top 0.1s ease-out"; // Плавная анимация
 
-        // Проверка столкновения
         if (checkCollision()) {
-            isFalling = false;
-            setTimeout(() => {
-                isFalling = true;
-            }, 200);
-        } else {
-            score++;
-            scoreDisplay.textContent = score;
+            velocity = -10; // Отскок
         }
 
-        // Перезапуск игры при выходе за границы
         if (ballY > 370) {
             ballY = 10;
+            velocity = 0;
             score = 0;
+            scoreDisplay.textContent = score;
+        } else {
+            score++;
             scoreDisplay.textContent = score;
         }
     }
